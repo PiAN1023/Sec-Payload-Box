@@ -9,7 +9,11 @@ Web安全Payload速查工具箱是一款面向授权安全测试场景的离线 
 
 工具支持完整的数据管理：可以新增、编辑、删除自定义 Payload，新建、重命名、删除自定义分类，批量删除自定义内容；自定义分类、Payload 和收藏记录可以通过 JSON 文件导出，并在其他环境中追加导入或覆盖导入。内置 Payload 保持只读，避免误修改。
 
+<img width="645" height="582" alt="image" src="https://github.com/user-attachments/assets/8aebd2ef-afa0-421b-be6c-cf0a65b703c7" />
+
 除 Payload 库外，工具还提供 URL、HTML 实体、Base64、Unicode、Hex、JSON 转义 6 种编解码方式，支持编码和解码，并可将 Payload 卡片内容直接发送到编码工具。常用快捷键包括 Ctrl+F 聚焦搜索、Ctrl+Enter 快速保存或编码、Esc 关闭弹窗。
+
+<img width="780" height="900" alt="image" src="https://github.com/user-attachments/assets/1df78163-02a4-4932-a22e-f1f0efd50791" />
 
 工具采用 Manifest V3，弹窗尺寸适配 520×600 的浏览器扩展窗口，使用原生 HTML、CSS、JavaScript 实现，无第三方框架和网络依赖。数据保存在浏览器本地，仅声明 storage 与 downloads 权限，不申请主机权限，不注入页面，断网环境也可正常使用。
 
