@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web安全Payload速查工具箱</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部 Tab 标签栏 -->
+    <header class="topbar">
+      <div class="tabs" role="tablist" aria-label="功能切换">
+        <button id="tabPayload" class="tab active" data-tab="payload" role="tab" aria-selected="true" type="button">Payload库</button>
+        <button id="tabEncode" class="tab" data-tab="encode" role="tab" aria-selected="false" type="button">编码工具</button>
+      </div>
+    </header>
+
+    <!-- 页面一：Payload 库 -->
+    <main id="viewPayload" class="view active">
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input id="searchInput" type="text" placeholder="搜索Payload / 场景说明" autocomplete="off" spellcheck="false" aria-label="搜索Payload">
+          <button id="clearSearchBtn" class="clear-btn hidden" type="button" title="清空搜索" aria-label="清空搜索">×</button>
+        </div>
+        <button id="addPayloadBtn" class="btn btn-primary btn-sm" type="button" title="添加自定义Payload">+ 添加Payload</button>
+        <button id="dataBtn" class="btn btn-ghost btn-sm" type="button" title="导入 / 导出数据">数据</button>
+      </div>
+
+      <div class="workspace">
+        <!-- 左侧分类导航 -->
+        <aside class="sidebar">
+          <div id="catNav" class="nav-scroll"></div>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <section class="content">
+          <div class="content-head">
+            <div class="title-wrap">
+              <h2 id="categoryTitle">SQL注入</h2>
+              <span id="categoryCount" class="count-pill">0</span>
+            </div>
+            <div class="head-actions">
+              <button id="batchBtn" class="btn btn-ghost btn-xs" type="button" title="批量删除自定义Payload">批量</button>
+              <button id="copyAllBtn" class="btn btn-ghost btn-xs" type="button" title="复制当前列表全部Payload">复制本类全部</button>
+            </div>
+          </div>
+
+          <div id="selectBar" class="select-bar hidden">
+            <label class="check-label"><input id="selectAllCheck" type="checkbox"> 全选</label>
+            <span id="selectedCount">已选 0 条</span>
+            <button id="deleteSelectedBtn" class="btn btn-danger btn-xs" type="button" disabled>删除选中</button>
+            <button id="exitSelectBtn" class="btn btn-ghost btn-xs" type="button">取消</button>
+          </div>
+
+          <div id="cardList" class="card-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- 页面二：编码工具 -->
+    <main id="viewEncode" class="view">
+      <div class="encode-wrap">
+        <div id="codecBar" class="codec-bar" role="tablist" aria-label="编码类型">
+          <button class="codec active" data-codec="url" type="button">URL</button>
+          <button class="codec" data-codec="html" type="button">HTML实体</button>
+          <button class="codec" data-codec="base64" type="button">Base64</button>
+          <button class="codec" data-codec="unicode" type="button">Unicode</button>
+          <button class="codec" data-codec="hex" type="button">Hex</button>
+          <button class="codec" data-codec="json" type="button">JSON转义</button>
+        </div>
+
+        <div class="encode-panel">
+          <div class="field-head">
+            <span>输入文本</span>
+            <span id="codecHint" class="hint">按 UTF-8 进行 URL 组件编码</span>
+          </div>
+          <textarea id="encodeInput" placeholder="在此输入或粘贴需要编解码的文本..." spellcheck="false"></textarea>
+        </div>
+
+        <div class="encode-actions">
+          <button id="encodeBtn" class="btn btn-primary btn-sm" type="button">编码 ↓</button>
+          <button id="decodeBtn" class="btn btn-ghost btn-sm" type="button">解码 ↓</button>
+          <span class="spacer"></span>
+          <button id="clearEncodeBtn" class="btn btn-ghost btn-xs" type="button">清空</button>
+        </div>
+
+        <div class="encode-panel">
+          <div class="field-head">
+            <span>输出结果</span>
+            <button id="copyOutputBtn" class="btn btn-ghost btn-xs" type="button">复制结果</button>
+          </div>
+          <textarea id="encodeOutput" placeholder="结果将显示在这里..." readonly spellcheck="false"></textarea>
+        </div>
+
+        <p class="encode-tip">提示：在 Payload 库点击卡片上的「编码」按钮，可将该条内容直接发送到此处。</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- 弹窗遮罩层 -->
+  <div id="overlay" class="overlay hidden">
+    <!-- 添加 / 编辑 Payload -->
+    <div id="payloadModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="payloadModalTitle">
+      <div class="modal-head">
+        <h3 id="payloadModalTitle">添加Payload</h3>
+        <button class="modal-close" type="button" data-close="1" aria-label="关闭">×</button>
+      </div>
+      <form id="payloadForm" novalidate>
+        <div class="modal-body">
+          <label class="field">
+            <span>归属分类 <em>*</em></span>
+            <select id="payloadCategory"></select>
+          </label>
+          <label class="field hidden" id="newCatField">
+            <span>新分类名称 <em>*</em></span>
+            <input id="newCategoryInput" type="text" maxlength="20" placeholder="输入自定义分类名称，如：WebShell技巧" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>场景说明 <em>*</em></span>
+            <input id="payloadDesc" type="text" maxlength="120" placeholder="例：MySQL 联合查询探测列数" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Payload 内容 <em>*</em></span>
+            <textarea id="payloadContent" rows="7" maxlength="8000" placeholder="支持换行与特殊字符；Ctrl+Enter 快速保存" spellcheck="false"></textarea>
+          </label>
+          <div id="payloadError" class="form-error hidden"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" data-close="1">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 二次确认 -->
+    <div id="confirmModal" class="modal modal-sm hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-head">
+        <h3 id="confirmTitle">确认操作</h3>
+        <button class="modal-close" type="button" data-close="1" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage" class="confirm-message"></p>
+        <label id="confirmCheckLine" class="checkbox-line hidden">
+          <input id="confirmCheck" type="checkbox">
+          <span id="confirmCheckLabel"></span>
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" data-close="1">取消</button>
+        <button id="confirmOkBtn" class="btn btn-danger" type="button">确认删除</button>
+      </div>
+    </div>
+
+    <!-- 新建 / 重命名分类 -->
+    <div id="categoryModal" class="modal modal-sm hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+      <div class="modal-head">
+        <h3 id="categoryModalTitle">新建分类</h3>
+        <button class="modal-close" type="button" data-close="1" aria-label="关闭">×</button>
+      </div>
+      <form id="categoryForm" novalidate>
+        <div class="modal-body">
+          <label class="field">
+            <span>分类名称 <em>*</em></span>
+            <input id="categoryNameInput" type="text" maxlength="20" placeholder="输入分类名称" autocomplete="off">
+          </label>
+          <div id="categoryError" class="form-error hidden"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" data-close="1">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 数据导入导出 -->
+    <div id="dataModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle">
+      <div class="modal-head">
+        <h3 id="dataModalTitle">数据备份与恢复</h3>
+        <button class="modal-close" type="button" data-close="1" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="data-section">
+          <div class="section-title">导出</div>
+          <p class="hint">将所有自定义Payload、自建分类与收藏记录导出为 JSON 文件，内置Payload不包含在内。</p>
+          <button id="exportBtn" class="btn btn-primary btn-block" type="button">导出 JSON 备份文件</button>
+        </div>
+        <div class="divider"></div>
+        <div class="data-section">
+          <div class="section-title">导入</div>
+          <p class="hint">选择备份文件后，将先校验数据格式；格式错误会给出提示且不会修改现有数据。</p>
+          <div class="radio-row">
+            <label class="radio-line"><input type="radio" name="importMode" value="append" checked> 追加导入</label>
+            <label class="radio-line"><input type="radio" name="importMode" value="replace"> 覆盖原有自定义数据</label>
+          </div>
+          <button id="importPickBtn" class="btn btn-ghost btn-block" type="button">选择 JSON 文件导入</button>
+          <input id="importFile" class="hidden" type="file" accept=".json,application/json">
+          <div id="dataError" class="form-error hidden"></div>
+        </div>
+        <div id="dataStats" class="data-stats"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" data-close="1">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
